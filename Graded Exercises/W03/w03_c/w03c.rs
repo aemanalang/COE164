@@ -1,26 +1,26 @@
 use std::io;
 use std::fmt;
 use std::collections::HashMap;
-
+#[derive(Clone, Debug,PartialEq)]
 struct SplitDate{
     year: u64,
     month: u8,
     day: u8,
 }
-
-struct LentItem{
+#[derive(Clone, Debug,PartialEq)]
+struct LentItem <'a>{
     name: String,
     acquire_date: SplitDate,
-    borrowed_by: Option<Borrower>,
+    borrowed_by: Option<&'a Borrower>,
 }
-
+#[derive(Clone, Debug,PartialEq)]
 struct Borrower{
     name: String,
     reg_date: SplitDate,
 }
 
 
-impl LentItem{
+impl<'a> LentItem<'a>{
     fn new(name_i: String, year_i: u64, month_i: u8, day_i: u8) -> Self{
         Self{
             name: name_i,
@@ -33,51 +33,43 @@ impl LentItem{
         }
     }
 
-    fn borrow(&mut self, to: &Borrower) -> Option<&Borrower>{
-        match self.borrowed_by{
-            Some(from) => {
-                self.borrowed_by = Some(*to);
-                return Some(&from);
-            }
-            None => {
-                self.borrowed_by = Some(*to);
-                return None;
-            }
+    fn borrow(&mut self, to:&'a Borrower) -> Option<&'a Borrower>{
+        if let Some(orig_borrow) = self.borrowed_by {
+            return Some(orig_borrow);
         }
-
-    }
-
-    fn unborrow(&mut self) -> Option<&Borrower>{
-        match self.borrowed_by{
-            Some(from) => {
-                self.borrowed_by = None;
-                return Some(&from);
-            }
-            None => {
-                return None;
-            }
+        else {
+        self.borrowed_by = Some(to);
+        return None;
         }
     }
 
-    fn transfer<'a> (&mut self, from: &'a Borrower, to: &'a Borrower) -> 
+    fn unborrow(&mut self) -> Option<&'a Borrower>{
+        if let Some(orig_borrow) = self.borrowed_by {
+            self.borrowed_by = None;
+            return Some(orig_borrow);
+        }
+        else {
+        return None;
+        }
+    }
+
+    fn transfer(&mut self, from: &'a Borrower, to: &'a Borrower) -> 
         (Option<&'a Borrower>, Option<&'a Borrower>){
+
             match self.borrowed_by{
                 Some(from_orig) => {
-                    if from.name == from_orig.name{
-                        if from.name == to.name{
-                           ((std::option::Option::Some(&from)), None)
-                        }
-                        else {
-                            (self.borrowed_by.as_ref(), (std::option::Option::Some(&to)))
-                        }
+                    if from.name == from_orig.name && from.name != to.name{
+                            self.borrowed_by = Some(to);
+                            (Some(from_orig), (Option::Some(&to)))
                     } else{
-                        ((std::option::Option::Some(&from)), None)
+                        (Some(from_orig), None)
                     }
 
                 }
                 None => {
                     return (None, None);
                 }
+
             }
     }
 
@@ -96,13 +88,21 @@ impl Borrower{
         }
     }
 
-    fn borrowed_items<'a> (&'a self, items: Vec<LentItem>) -> Vec<&LentItem>{
+    fn borrowed_items <'a> (&'a self, items: &'a Vec<&'a LentItem>) -> Vec<&'a LentItem>{
         let mut items_borrowed: Vec<&LentItem> = Vec::new();
         for x in 0..items.len(){
             
             match items[x].borrowed_by{
                 Some(borrower) =>{
-                    if borrower.name != self.name {items_borrowed.push(&items[0]);}
+                    if borrower.name == self.name {
+
+                        if items_borrowed.len() == 0 {items_borrowed.push(items[x]); continue;}
+                        
+                        for y in 0..items_borrowed.len(){
+                            if items[x].name < items_borrowed[y].name {items_borrowed.insert(y, items[x]); break;}
+                            else{if y == items_borrowed.len() - 1 {items_borrowed.push(items[x]); break;}}
+                            } 
+                        }
                 }
                 _ =>{}
             }
@@ -118,19 +118,22 @@ impl fmt::Display for Borrower{
     }
 }
 
-impl fmt::Display for LentItem{
+impl fmt::Display for LentItem<'_>{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    write!(f, "Lentitem({}) [Acquired {}]", self.name, self.acquire_date)
+    if let Some(borrower) = self.borrowed_by{
+        write!(f, "Lentitem({}) [Acquired {}] [Borrowed by {}]", self.name, self.acquire_date, borrower.name)}
+    
+    else {write!(f, "Lentitem({}) [Acquired {}]", self.name, self.acquire_date)}
+    
     }
 }
 
 impl fmt::Display for SplitDate{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    write!(f, "{}-{}-{}", self.year, self.month, self.day)
+    write!(f, "{}-{:02}-{:02}", self.year, self.month, self.day)
     }
 }
 
-// No need to edit starting from this line!
 fn main() {
     let mut str_in = String::new();
     let mut borrower_list: HashMap <String, Borrower> = HashMap::new();

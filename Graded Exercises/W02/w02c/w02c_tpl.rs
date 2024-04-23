@@ -24,15 +24,6 @@ struct GroceryItem{
     weight: f64,
 }
 
-impl GroceryItem {
-    fn new() -> Self {
-        Self{
-            item: None,
-            price: 0.0,
-            weight: 0.0,
-        }
-    }
-
 #[derive(Debug, Copy, Clone, PartialEq)]
 struct SmartCart{
     items: [GroceryItem; 10], 
@@ -45,15 +36,14 @@ struct SmartCart{
 
 impl SmartCart{
     fn new(max_budget: f64) -> SmartCart{
-        Smartcart{
-        items: [GroceryItem.new(); 10],
+        SmartCart{
+        items: [GroceryItem::new(); 10],
         max_budget: max_budget,
         max_weight: 12.0, 
         current_value: 0.0, 
         current_weight: 0.0,
-        current_size: 0.0,
+        current_size: 0,
         }
-    }
     }
 
     fn add_item(&mut self, grocery_item: GroceryItem){ 
@@ -69,7 +59,24 @@ impl SmartCart{
     fn show_info(self){
         // TODO: Create a routine that prints the contents of the
         //       cart according to specs.
+    }
+
 }
+
+impl GroceryItem {
+    fn new() -> Self {
+        Self{
+            item: ItemType::None,
+            price: 0.0,
+            weight: 0.0,
+        }
+    }
+
+
+
+
+
+  
 
 }
 
@@ -86,7 +93,45 @@ fn main(){
     let n_cmd: u64 = str_in.trim().parse().expect("Input is not a decimal number!");
 
     let mut cart = SmartCart::new(budget);
-    
+
+    for _ in 0..n_cmd{
+
+    str_in.clear();
+    io::stdin().read_line(&mut str_in)
+        .expect("Invalid input!");
+
+    let (cmd, cmd_2) = match str_in.find(' ') {
+        Some(index) => {
+            let (left, right) = str_in.split_at(index);
+            (left.trim(), right.trim())
+        },
+        None => (str_in.trim(), ""),
+    };
+
+    match cmd{
+        add => {
+            let mut item = GroceryItem::new();
+            cart.add_item(item);
+        }
+
+        remove => {
+            cart.remove_item(0);
+        }
+
+        show_info => {
+            cart.show_info();
+        }
+
+        _ => {
+            println!{"[ERROR] Command not found!"}
+        }
+
+    }
+
+
+
+
+    }
     // TODO: Create a routine that reads and executes the listed command, as 
     //       well as the error handling requirements. 
 }
